@@ -66,6 +66,7 @@ class TulingWXBot(WXBot):
         if msg['msg_type_id'] == 1 and msg['content']['type'] == 0:  # reply to self
             self.auto_switch(msg)
         elif msg['msg_type_id'] == 4 and msg['content']['type'] == 0:  # text message from contact
+            print '个人消息：%s' % msg['user']
             self.send_msg_by_uid(self.tuling_auto_reply(msg['user']['id'], msg['content']['data']), msg['user']['id'])
         elif msg['msg_type_id'] == 3 and msg['content']['type'] == 0:  # group text message
             if 'detail' in msg['content']:
@@ -86,12 +87,15 @@ class TulingWXBot(WXBot):
                                 break
                 if is_at_me:
                     src_name = msg['content']['user']['name']
+                    text = msg['content']['desc']
                     reply = 'to ' + src_name + ': '
-                    if msg['content']['type'] == 0:  # text message
-                        reply += self.tuling_auto_reply(msg['content']['user']['id'], msg['content']['desc'])
+                    print result.group()
+                    if msg['content']['desc'] is None:
+                        reply = '这时候我应该@全体人员'
+                        self.send_msg_by_uid(reply, msg['user']['id'])
                     else:
-                        reply += u"对不起，只认字，其他杂七杂八的我都不认识，,,Ծ‸Ծ,,"
-                    self.send_msg_by_uid(reply, msg['user']['id'])
+                        reply = '您好！老师！您还在怕您的通知被微信群消息淹没吗？发了通知也不知道谁看了？专为班级微信群服务，用小助手就对了。\n宝宝会：\n1.通知列表：https://github.com/?q=wechat+share\n2.发通知：https://github.com/search?q=wechat+share\n'
+                        self.send_msg_by_uid(reply, msg['user']['id'])
 
 
 def main():
@@ -104,4 +108,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
