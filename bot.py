@@ -89,12 +89,15 @@ class TulingWXBot(WXBot):
                     src_name = msg['content']['user']['name']
                     text = msg['content']['desc']
                     reply = 'to ' + src_name + ': '
-                    print result.group()
+                    # print result.group()
                     if msg['content']['desc'] is None:
                         reply = '这时候我应该@全体人员'
+                        print self.get_group_unique_tips(msg['user']['id'])
                         self.send_msg_by_uid(reply, msg['user']['id'])
                     else:
                         reply = '您好！老师！您还在怕您的通知被微信群消息淹没吗？发了通知也不知道谁看了？专为班级微信群服务，用小助手就对了。\n宝宝会：\n1.通知列表：https://github.com/?q=wechat+share\n2.发通知：https://github.com/search?q=wechat+share\n'
+                        print msg['user']['id']
+                        print self.get_group_unique_tips(msg['user']['id'])
                         self.send_msg_by_uid(reply, msg['user']['id'])
 
 

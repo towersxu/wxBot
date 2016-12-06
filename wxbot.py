@@ -18,6 +18,8 @@ import copy
 from traceback import format_exc
 from requests.exceptions import ConnectionError, ReadTimeout
 import HTMLParser
+import hashlib
+
 from Dbc import *
 
 UNKONWN = 'unkonwn'
@@ -180,7 +182,7 @@ class WXBot:
                         {'type': 'group_member', 'info': member, 'group': group}
 
         # print json.dumps(self.group_list, indent=2)
-
+        self.saveContactList()
         if self.DEBUG:
             with open(os.path.join(self.temp_pwd,'contact_list.json'), 'w') as f:
                 f.write(json.dumps(self.contact_list, indent=2))
@@ -246,6 +248,12 @@ class WXBot:
                     names['display_name'] = member['DisplayName']
                 return names
         return None
+
+    def get_group_unique_tips(self, uid):
+        r = self.dbGroups.find_one({'UserName': uid}, {'NickName':1,'OwnerUin': 1,"_id":0})
+        print r
+        unique_str = str(r['OwnerUin']) + str(r['NickName'])
+        return hashlib.md5(unique_str).hexdigest()
 
     def get_contact_info(self, uid):
         return self.account_info['normal_member'].get(uid)
@@ -443,7 +451,7 @@ class WXBot:
                     print '    %s[Location] %s ' % (msg_prefix, pos)
             else:
                 msg_content['type'] = 0
-                if msg_type_id == 3 or (msg_type_id == 1 and msg['ToUserName'][:2] == '@@'):  # Group text message。如果是发给群的地理位置或者自己发送的地理位置
+                if msg_type_id == 3 or (msg_type_id == 1 and msg['ToUserName'][:2] == '@@'):
                     msg_infos = self.proc_at_info(content)
                     str_msg_all = msg_infos[0]
                     str_msg = msg_infos[1]
@@ -1159,15 +1167,20 @@ class WXBot:
         }
         return True
 
-    def saveMemberList(self, memberList):
-        self.dbUsers.insert_many(memberList)
+    def saveContactList(self):
+        contactList = copy.deepcopy(self.contact_list)
+        self.dbContacts.insert_many(contactList)
 
-    def saveGroupList(self, groupList):
-        groupList = copy.deepcopy(groupList)
+    # def saveMemberList(self, memberList):
+    #     self.dbUsers.insert_many(memberList)
+    # 保存信息
+    def saveGroupList(self):
+        groupList = copy.deepcopy(self.group_list)
         # self.dbGroups.insert_many(group)
         for group in groupList:
             if group['UserName'].find('@@') != -1:  # 群聊
-                self.saveMemberList(group['MemberList'])
+                # self.saveMemberList(group['MemberList'])
+                self.dbUsers.insert_many(group['MemberList'])
                 group['MemberList'] = [{"UserName": member['UserName']} for member in group['MemberList']]
 
         self.dbGroups.insert_many(groupList)
@@ -1185,7 +1198,7 @@ class WXBot:
         self.group_list = dic['ContactList']
         self.sync_key_str = '|'.join([str(keyVal['Key']) + '_' + str(keyVal['Val'])
                                       for keyVal in self.sync_key['List']])
-        self.saveGroupList(self.group_list)
+        self.saveGroupList()
         return dic['BaseResponse']['Ret'] == 0
 
     def status_notify(self):
